@@ -8,7 +8,7 @@ $id = $_GET['id'];
 
 $student = findStudent($id);
 $courses = getCoursesGrade($id);
-$studentAverage = findStudentsWithAverage($id);
+$studentAverage = findStudentWithAverage($id);
 ?>
 
 <?php include('components/header.php'); ?>

@@ -47,7 +47,7 @@ function findStudent($id)
     return $result->fetch_object();
 }
 
-function findStudentsWithAverage($id) {
+function findStudentWithAverage($id) {
     global $mysqli;
 
     $query = <<<SQL
