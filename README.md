@@ -1,6 +1,6 @@
 # PHP CRUD
 
-Created to complete web programming course assignments.
+[PHP CRUD](https://github.com/Aguezz/php-crud), created to complete web programming course assignments.
 
 ## Installation
 
