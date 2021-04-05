@@ -11,14 +11,12 @@ if ($_POST) {
 
     $mysqli->query("START TRANSACTION");
 
-    // Insert student first
     $query = "UPDATE `students` SET `name` = ? WHERE id = ? LIMIT 1";
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param("ss", $name, $id);
     $stmt->execute();
     $stmt->close();
 
-    // Insert course grade of student
     $query = <<<SQL
         UPDATE `student_has_course`
         SET `daily_assignments_grade` = ?, `midterm_exam_grade` = ?, `final_exam_grade` = ?
