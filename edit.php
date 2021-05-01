@@ -2,46 +2,57 @@
 
 require_once './helper/mysqli.php';
 require_once './helper/shorthand.php';
+require_once './helper/utils.php';
 
 $id = $_GET['id'];
 
 if ($_POST) {
+    $newId = $_POST['id'];
     $name = $_POST['name'];
     $courses = $_POST['courses'];
 
-    $mysqli->query("START TRANSACTION");
+    $db->StartTrans();
 
-    $query = "UPDATE `students` SET `name` = ? WHERE id = ? LIMIT 1";
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("ss", $name, $id);
-    $stmt->execute();
-    $stmt->close();
+    // Insert student first
+    $handle = $db->Prepare("UPDATE `students` SET `id` = ?, `name` = ? WHERE id = ? LIMIT 1");
+    $bindVariables = [0 => $newId, 1 => $name, 2 => $id];
+    $db->Execute($handle, $bindVariables);
 
-    $query = <<<SQL
-        UPDATE `student_has_course`
-        SET `daily_assignments_grade` = ?, `midterm_exam_grade` = ?, `final_exam_grade` = ?
-        WHERE `student_id` = ? AND `course_id` = ?
-    SQL;
-    $stmt = $mysqli->prepare($query);
+    $handle = $db->Prepare(
+        <<<SQL
+            UPDATE `student_has_course`
+            SET `daily_assignments_grade` = ?, `midterm_exam_grade` = ?, `final_exam_grade` = ?
+            WHERE `student_id` = ? AND `course_id` = ?
+        SQL
+    );
+
+    var_dump($courses);
+    die();
 
     foreach ($courses as $courseId => $course) {
-        $dailyAssignmentsGrade = $course['daily_assignments_grade'];
-        $midtermExamGrade = $course['midterm_exam_grade'];
-        $finalExamGrade = $course['final_exam_grade'];
+        $dailyAssignmentsGrade = sanitizeNumber($course['daily_assignments_grade']);
+        $midtermExamGrade = sanitizeNumber($course['midterm_exam_grade']);
+        $finalExamGrade = sanitizeNumber($course['final_exam_grade']);
 
-        $stmt->bind_param("iiisi", $dailyAssignmentsGrade, $midtermExamGrade, $finalExamGrade, $id, $courseId);
-        $stmt->execute();
+        $bindVariables = [
+            0 => $dailyAssignmentsGrade,
+            1 => $midtermExamGrade,
+            2 => $finalExamGrade,
+            3 => $id,
+            4 => $courseId,
+        ];
+        $db->Execute($handle, $bindVariables);
     }
+    $db->Execute("COMMIT");
 
-    $stmt->close();
-    $mysqli->query("COMMIT");
+    header('Location: index.php');
 }
 
 $student = findStudent($id);
 $courses = getStudentCourses($id);
 ?>
 
-<?php include('header.php'); ?>
+<?php include('./components/header.php'); ?>
 
 <form action="" method="POST">
     <table cellpadding="10">
@@ -51,7 +62,7 @@ $courses = getStudentCourses($id);
                     <label for="id">ID</label>
                 </td>
                 <td colspan="3">
-                    <input type="text" name="id" id="id" placeholder="Student ID" value="<?= $student->id ?>" readonly>
+                    <input type="text" name="id" id="id" placeholder="Student ID" value="<?= htmlspecialchars($student->id) ?>">
                 </td>
             </tr>
             <tr>
@@ -59,7 +70,7 @@ $courses = getStudentCourses($id);
                     <label for="name">Name</label>
                 </td>
                 <td colspan="3">
-                    <input type="text" name="name" id="name" placeholder="Name" value="<?= $student->name ?>">
+                    <input type="text" name="name" id="name" placeholder="Name" value="<?= htmlspecialchars($student->name) ?>">
                 </td>
             </tr>
 
@@ -74,29 +85,27 @@ $courses = getStudentCourses($id);
                 <td><strong>Final Exam Grade</strong></td>
             </tr>
 
-            <?php while ($course = $courses->fetch_object()) : ?>
+            <?php foreach ($courses as $course) : ?>
                 <tr>
                     <td>
                         <label for="course-<?= $course->id ?>"><?= $course->name ?></label>
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][daily_assignments_grade]" placeholder="Daily Assignments Grade" value="<?= $course->daily_assignments_grade ?>">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][daily_assignments_grade]" placeholder="Daily Assignments Grade" value="<?= $course->daily_assignments_grade ?>">
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][midterm_exam_grade]" placeholder="Midterm Exam Grade" value="<?= $course->midterm_exam_grade ?>">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][midterm_exam_grade]" placeholder="Midterm Exam Grade" value="<?= $course->midterm_exam_grade ?>">
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][final_exam_grade]" placeholder="Final Exam Grade" value="<?= $course->final_exam_grade ?>">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][final_exam_grade]" placeholder="Final Exam Grade" value="<?= $course->final_exam_grade ?>">
                     </td>
                 </tr>
-            <?php endwhile ?>
+            <?php endforeach ?>
         </tbody>
     </table>
 
-    <button type="submit">
-        Update
-    </button>
+    <button type="submit">Update</button>
     <a href="index.php">Back</a>
 </form>
 
-<?php include('footer.php'); ?>
+<?php include('./components/footer.php'); ?>

@@ -17,11 +17,11 @@ $studentAverage = findStudentWithAverage($id);
     <tbody>
         <tr>
             <td>ID</td>
-            <td colspan="3"><?= $student->id ?></td>
+            <td colspan="3"><?= htmlspecialchars($student->id) ?></td>
         </tr>
         <tr>
             <td>Name</td>
-            <td colspan="3"><?= $student->name ?></td>
+            <td colspan="3"><?= htmlspecialchars($student->name) ?></td>
         </tr>
         <tr>
             <th></th>
@@ -29,14 +29,14 @@ $studentAverage = findStudentWithAverage($id);
             <th>Midtern Exam Grade Average</th>
             <th>Final Exam Grade Average</th>
         </tr>
-        <?php while ($course = $courses->fetch_object()) : ?>
+        <?php foreach ($courses as $course) : ?>
             <tr>
                 <td><?= $course->name ?></td>
                 <td><?= $course->daily_assignments_grade ?></td>
                 <td><?= $course->midterm_exam_grade ?></td>
                 <td><?= $course->final_exam_grade ?></td>
             </tr>
-        <?php endwhile ?>
+        <?php endforeach ?>
     </tbody>
     <tfoot>
         <tr>

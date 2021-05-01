@@ -1,21 +1,35 @@
 <?php
 
+require_once __DIR__ . '/../vendor/adodb/adodb-php/adodb-lib.inc.php';
 require_once './helper/mysqli.php';
+require_once './helper/utils.php';
 
-function getCourses()
+function query($query, ...$arguments)
 {
-    global $mysqli;
+    global $db;
 
-    $query = "SELECT * FROM `courses` ORDER BY `name` ASC";
-    $result = $mysqli->query($query);
+    if (count($arguments) === 0) {
+        $result = $db->Execute($query);
+    } else {
+        $handle = $db->Prepare($query);
+        $bindVariables = [];
+        foreach ($arguments as $key => $value) {
+            $bindVariables = array_merge($bindVariables, [$key => $value]);
+        }
+        $result = $db->Execute($handle, $bindVariables);
+    }
 
     return $result;
 }
 
+function getCourses()
+{
+    $query = "SELECT * FROM `courses` ORDER BY `name` ASC";
+    return query($query);
+}
+
 function getStudentsWithAverage()
 {
-    global $mysqli;
-
     $query = <<<SQL
         SELECT `s`.`id`,
             `s`.`name`,
@@ -27,29 +41,18 @@ function getStudentsWithAverage()
             ON `shc`.`student_id` = `s`.`id`
         GROUP BY `shc`.`student_id`
     SQL;
-    $result = $mysqli->query($query);
 
-    return $result;
+    return convertList(query($query));
 }
 
 function findStudent($id)
 {
-    global $mysqli;
-
     $query = "SELECT * FROM `students` WHERE `id` = ? LIMIT 1";
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("s", $id);
-    $stmt->execute();
-
-    $result = $stmt->get_result();
-    $stmt->close();
-
-    return $result->fetch_object();
+    return query($query, $id)->FetchObj();
 }
 
-function findStudentWithAverage($id) {
-    global $mysqli;
-
+function findStudentWithAverage($id)
+{
     $query = <<<SQL
         SELECT `s`.`id`,
             `s`.`name`,
@@ -63,20 +66,12 @@ function findStudentWithAverage($id) {
         GROUP BY `shc`.`student_id`
         LIMIT 1
     SQL;
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("s", $id);
-    $stmt->execute();
 
-    $result = $stmt->get_result();
-    $stmt->close();
-
-    return $result->fetch_object();
+    return query($query, $id)->FetchObj();
 }
 
 function getCoursesGrade($id)
 {
-    global $mysqli;
-
     $query = <<<SQL
         SELECT `c`.`id`,
             `c`.`name`,
@@ -89,19 +84,12 @@ function getCoursesGrade($id)
         WHERE `shc`.`student_id` = ?
         ORDER BY `c`.`name` ASC
     SQL;
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("s", $id);
-    $stmt->execute();
 
-    $result = $stmt->get_result();
-    $stmt->close();
-
-    return $result;
+    return convertList(query($query, $id));
 }
 
-function getStudentCourses($id) {
-    global $mysqli;
-
+function getStudentCourses($id)
+{
     $query = <<<SQL
         SELECT `c`.`id`,
             `c`.`name`,
@@ -114,12 +102,7 @@ function getStudentCourses($id) {
         WHERE `shc`.`student_id` = ?
         ORDER BY `c`.`name` ASC
     SQL;
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("s", $id);
-    $stmt->execute();
 
-    $result = $stmt->get_result();
-    $stmt->close();
-
-    return $result;
+    return convertList(query($query, $id));
 }
+    

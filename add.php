@@ -2,36 +2,41 @@
 
 require_once './helper/mysqli.php';
 require_once './helper/shorthand.php';
+require_once './helper/utils.php';
 
 if ($_POST) {
     $id = $_POST['id'];
     $name = $_POST['name'];
     $courses = $_POST['courses'];
 
-    $mysqli->query("START TRANSACTION");
+    $db->StartTrans();
 
     // Insert student first
-    $query = "INSERT INTO `students` (`id`, `name`) VALUES (?, ?)";
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("ss", $id, $name);
-    $stmt->execute();
-    $stmt->close();
+    $handle = $db->Prepare("INSERT INTO `students` (`id`, `name`) VALUES (?, ?)");
+    $bindVariables = [0 => $id, 1 => $name];
+    $db->Execute($handle, $bindVariables);
 
     // Insert course grade of student
-    $query = "INSERT INTO `student_has_course` (`student_id`, `course_id`, `daily_assignments_grade`, `midterm_exam_grade`, `final_exam_grade`) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $mysqli->prepare($query);
+    $handle = $db->Prepare("INSERT INTO `student_has_course` (`student_id`, `course_id`, `daily_assignments_grade`, `midterm_exam_grade`, `final_exam_grade`) VALUES (?, ?, ?, ?, ?)");
 
     foreach ($courses as $courseId => $course) {
-        $dailyAssignmentsGrade = $course['daily_assignments_grade'];
-        $midtermExamGrade = $course['midterm_exam_grade'];
-        $finalExamGrade = $course['final_exam_grade'];
+        $dailyAssignmentsGrade = sanitizeNumber($course['daily_assignments_grade']);
+        $midtermExamGrade = sanitizeNumber($course['midterm_exam_grade']);
+        $finalExamGrade = sanitizeNumber($course['final_exam_grade']);
 
-        $stmt->bind_param("siiii", $id, $courseId, $dailyAssignmentsGrade, $midtermExamGrade, $finalExamGrade);
-        $stmt->execute();
+        $bindVariables = [
+            0 => $id,
+            1 => $courseId,
+            2 => $dailyAssignmentsGrade,
+            3 => $midtermExamGrade,
+            4 => $finalExamGrade
+        ];
+        $db->Execute($handle, $bindVariables);
     }
 
-    $stmt->close();
-    $mysqli->query("COMMIT");
+    $db->Execute("COMMIT");
+
+    header('Location: index.php');
 }
 
 $courses = getCourses();
@@ -70,19 +75,20 @@ $courses = getCourses();
                 <td><strong>Final Exam Grade</strong></td>
             </tr>
 
-            <?php while ($course = $courses->fetch_object()) : ?>
+            <?php while (!$courses->EOF) : ?>
+                <?php $course = $courses->FetchNextObj() ?>
                 <tr>
                     <td>
                         <label><?= $course->name ?></label>
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][daily_assignments_grade]" placeholder="Daily Assignments Grade">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][daily_assignments_grade]" placeholder="Daily Assignments Grade">
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][midterm_exam_grade]" placeholder="Midterm Exam Grade">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][midterm_exam_grade]" placeholder="Midterm Exam Grade">
                     </td>
                     <td>
-                        <input type="number" name="courses[<?= $course->id ?>][final_exam_grade]" placeholder="Final Exam Grade">
+                        <input type="number" min="0" max="100" name="courses[<?= $course->id ?>][final_exam_grade]" placeholder="Final Exam Grade">
                     </td>
                 </tr>
             <?php endwhile ?>

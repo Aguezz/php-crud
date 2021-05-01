@@ -22,10 +22,10 @@ $students = getStudentsWithAverage();
         </tr>
     </thead>
     <tbody>
-        <?php while ($student = $students->fetch_object()) : ?>
+        <?php foreach ($students as $student) : ?>
             <tr>
-                <td><?= $student->id ?></td>
-                <td><?= $student->name ?></td>
+                <td><?= htmlspecialchars($student->id) ?></td>
+                <td><?= htmlspecialchars($student->name) ?></td>
                 <td><?= $student->daily_assignments_grade ?></td>
                 <td><?= $student->midterm_exam_grade ?></td>
                 <td><?= $student->final_exam_grade ?></td>
@@ -39,12 +39,12 @@ $students = getStudentsWithAverage();
                     ?>
                 </td>
                 <td>
-                    <a href="detail.php?id=<?= $student->id ?>">More Information</a>
-                    <a href="edit.php?id=<?= $student->id ?>">Edit</a>
-                    <a href="delete.php?id=<?= $student->id ?>" onclick="return confirm('Are you sure want to delete this data?')">Delete</a>
+                    <a href="detail.php?id=<?= htmlspecialchars($student->id) ?>">More Information</a>
+                    <a href="edit.php?id=<?= htmlspecialchars($student->id) ?>">Edit</a>
+                    <a href="delete.php?id=<?= htmlspecialchars($student->id) ?>" onclick="return confirm('Are you sure want to delete this data?')">Delete</a>
                 </td>
             </tr>
-        <?php endwhile ?>
+        <?php endforeach ?>
     </tbody>
 </table>
 
